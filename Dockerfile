@@ -53,4 +53,4 @@ ENV NODE_ENV=production \
   PAPERCLIP_DEPLOYMENT_EXPOSURE=private
 
 EXPOSE 3100
-CMD ["sh", "-c", "mkdir -p /paperclip/instances/default/logs /paperclip/instances/default/db /paperclip/instances/default/data && node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js"]
+CMD ["sh", "-c", "mkdir -p /paperclip/instances/default/logs /paperclip/instances/default/db /paperclip/instances/default/data && node --import ./server/node_modules/tsx/dist/loader.mjs cli/dist/index.js auth bootstrap-ceo --force 2>&1 || true && node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js"]
