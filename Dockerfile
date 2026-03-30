@@ -32,6 +32,7 @@ COPY . .
 RUN pnpm --filter @paperclipai/ui build
 RUN pnpm --filter @paperclipai/plugin-sdk build
 RUN pnpm --filter @paperclipai/server build
+RUN pnpm --filter @paperclipai/cli build
 RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
 
 FROM base AS production
@@ -52,7 +53,5 @@ ENV NODE_ENV=production \
   PAPERCLIP_DEPLOYMENT_MODE=authenticated \
   PAPERCLIP_DEPLOYMENT_EXPOSURE=private
 
-RUN printf 'import{createHash,randomBytes}from"crypto";import postgres from"postgres";const sql=postgres(process.env.DATABASE_URL);const t="pcp_bootstrap_"+randomBytes(24).toString("hex");const h=createHash("sha256").update(t).digest("hex");try{await sql`INSERT INTO invites(invite_type,token_hash,allowed_join_types,expires_at,invited_by_user_id)VALUES(${"bootstrap_ceo"},${h},${"human"},${new Date(Date.now()+72*36e5)},${"system"})`;console.log("INVITE_URL:"+(process.env.PAPERCLIP_PUBLIC_URL||"http://localhost:3100")+"/invite/"+t)}catch(e){console.log("Bootstrap:",e.message)}await sql.end()' > /app/bootstrap.mjs
-
 EXPOSE 3100
-CMD ["sh", "-c", "mkdir -p /paperclip/instances/default/logs /paperclip/instances/default/db /paperclip/instances/default/data && node /app/bootstrap.mjs 2>&1 || true; exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js"]
+CMD ["sh", "-c", "mkdir -p /paperclip/instances/default/logs /paperclip/instances/default/db /paperclip/instances/default/data && echo '{\"$meta\":{\"version\":1,\"updatedAt\":\"2026-03-28T00:00:00Z\",\"source\":\"onboard\"},\"logging\":{\"mode\":\"file\",\"logDir\":\"/paperclip/instances/default/logs\"},\"server\":{\"deploymentMode\":\"authenticated\",\"exposure\":\"public\",\"host\":\"0.0.0.0\",\"port\":8080},\"database\":{\"mode\":\"postgres\"},\"auth\":{\"baseUrlMode\":\"explicit\",\"publicBaseUrl\":\"'\"$PAPERCLIP_PUBLIC_URL\"'\"},\"storage\":{\"provider\":\"local_disk\"}}' > /paperclip/instances/default/config.json && node --import ./server/node_modules/tsx/dist/loader.mjs cli/dist/index.js auth bootstrap-ceo --force 2>&1 || true; exec node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js"]
